@@ -32,12 +32,13 @@ def barycenter(A, M, weights=None, verbose=False, log=False, solver='interior-po
      The function solves the following optimization problem [16]:
 
     .. math::
-       \mathbf{a} = arg\min_\mathbf{a} \sum_i W_{1}(\mathbf{a},\mathbf{a}_i)
+       \mathbf{a} = arg\min_\mathbf{a} \sum_i \lambda_i W_{2}^{2}(\mathbf{a},\mathbf{a}_i)
 
     where :
 
-    - :math:`W_1(\cdot,\cdot)` is the Wasserstein distance (see ot.emd.sinkhorn)
+    - :math:`W_{2}^{2}(\cdot,\cdot)` is the squared 2-Wasserstein distance (see ot.emd.sinkhorn)
     - :math:`\mathbf{a}_i` are training distributions in the columns of matrix :math:`\mathbf{A}`
+    - :math:`\lambda_i` are positive weights summing to 1 (on the simplex)
 
     The linear program is solved using the interior point solver from scipy.optimize.
     If cvxopt solver if installed it can use cvxopt
@@ -49,9 +50,7 @@ def barycenter(A, M, weights=None, verbose=False, log=False, solver='interior-po
     A : np.ndarray (d,n)
         n training distributions a_i of size d
     M : np.ndarray (d,d)
-        loss matrix   for OT
-    reg : float
-        Regularization term >0
+        loss matrix for OT
     weights : np.ndarray (n,)
         Weights of each histogram a_i on the simplex (barycentric coodinates)
     verbose : bool, optional
@@ -60,7 +59,9 @@ def barycenter(A, M, weights=None, verbose=False, log=False, solver='interior-po
         record log if True
     solver : string, optional
         the solver used, default 'interior-point' use the lp solver from
-        scipy.optimize. None, or 'glpk' or 'mosek' use the solver from cvxopt.
+        scipy.optimize (can also state "simplex" for scipy.optimize's lp 
+        solver with simplex method. None, or 'glpk' or 'mosek' use the 
+        solver from cvxopt.
 
     Returns
     -------
@@ -117,8 +118,8 @@ def barycenter(A, M, weights=None, verbose=False, log=False, solver='interior-po
     A_eq = sps.vstack((A_eq1, A_eq2))
     b_eq = np.concatenate((b_eq1, b_eq2))
 
-    if not cvxopt or solver in ['interior-point']:
-        # cvxopt not installed or interior point
+    if not cvxopt or solver in ['interior-point', 'simplex']:
+        # cvxopt not installed or interior point or simplex
 
         if solver is None:
             solver = 'interior-point'
